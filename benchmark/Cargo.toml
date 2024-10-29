@@ -1,0 +1,9 @@
+[package]
+name = "benchmark"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gumbel_estimation = { path = "../gumbel_estimation" }
+hyperloglogplus = "0.4.1"
+rand = "0.8.5"

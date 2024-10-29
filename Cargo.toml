@@ -1,0 +1,6 @@
+[workspace]
+members = [
+	"gumbel_estimation",
+	"benchmark",
+]
+resolver = "2"
