@@ -2,5 +2,6 @@
 members = [
 	"gumbel_estimation",
 	"benchmark",
+	"gen_data",
 ]
 resolver = "2"
