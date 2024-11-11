@@ -2,7 +2,7 @@ use std::hash::{Hash, BuildHasher};
 use rand::{Rng, thread_rng};
 use rand::distributions::{Uniform};
 
-const NEG_GAMMA: f64 = -0.577215664901532860606512090082402431_f64;
+const NEG_GAMMA: f64 = -0.577_215_664_901_532_9_f64;
 
 #[derive(Debug)]
 pub enum GumbelError {
@@ -30,7 +30,7 @@ impl<B: BuildHasher> GumbelEstimator<B> {
     /// # Arguments
     ///
     /// - `precision` - corresponds to the number of registers used by this estimator using the 
-    /// formula `no_registers = 2^precision`; the accepted values lie in the range {4, 5, ..., 16}
+    ///   formula `no_registers = 2^precision`; the accepted values lie in the range {4, 5, ..., 16}
     /// - `builder` - this is a hash builder that will be used for hashing provided values
     pub fn with_precision(precision: u8, builder: B) -> Result<Self, GumbelError> {
 

@@ -38,7 +38,7 @@ fn parse_args() -> Result<Setup, Box<dyn Error>> {
         return Err("dataset size has to be at least the size of its cardinality".into());
     }
 
-    return Ok(Setup{out, card, size});
+    Ok(Setup{out, card, size})
 }
 
 fn gen_data(s: &mut Setup) -> io::Result<()> {
