@@ -1,7 +1,7 @@
 [workspace]
 members = [
 	"gumbel_estimation",
-	"benchmark",
+	"comparison",
 	"gen_data",
 ]
 resolver = "2"

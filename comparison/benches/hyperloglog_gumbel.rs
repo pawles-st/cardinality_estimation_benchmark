@@ -1,7 +1,7 @@
 use criterion::*;
 use itertools::iproduct;
 
-use benchmark::{CARDINALITIES, DATA_SIZE_MULTIPLIES, load_data};
+use comparison::{CARDINALITIES, DATA_SIZE_MULTIPLIES, load_data};
 
 mod common;
 

@@ -9,10 +9,10 @@ use std::hash::Hash;
 #[macro_export]
 macro_rules! perform {
     ("HyperLogLog", $m:expr, $card:expr, $data:expr) => {
-        estimate_hll($m, $card, &($data), benchmark::ITERATIONS);
+        estimate_hll($m, $card, &($data), comparison::ITERATIONS);
     };
     ("Gumbel", $m:expr, $card:expr, $data:expr) => {
-        estimate_gumbel($m, $card, &($data), benchmark::ITERATIONS);
+        estimate_gumbel($m, $card, &($data), comparison::ITERATIONS);
     };
     ("HyperLogLog", $m:expr, $card:expr, $data:expr, $iters:expr) => {
         estimate_hll($m, $card, &($data), $iter);
