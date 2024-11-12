@@ -3,35 +3,72 @@ use gumbel_estimation::GumbelEstimator;
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 //use std::collections::hash_map::RandomState;
 use std::fs::File;
-use std::io::{Write};
-use std::hash::Hash;
+use std::io;
+use std::io::{BufRead, BufReader, Write};
 
 use comparison::constants::ITERATIONS;
 
-pub fn gather_hll<T: Hash>(prec: u8, card: usize, data: &[T]) {
-    let path = format!("../results/HyperLogLog_{}_{}_{}.txt", prec, card, data.len());
-    let mut out = File::create(path).unwrap_or_else(|e| panic!("{}", e));
+pub fn gather_hll(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
+
+    // prepare the output
+    let outpath = format!("../results/HyperLogLog_{}_{}_{}.txt", prec, card, size);
+    let mut out = File::create(outpath)?;
     
-    (0..ITERATIONS).for_each(|_| {
-        let mut estimator = HyperLogLogPF::<T, _>::new(prec, RandomState::new()).unwrap();
-        for d in data {
-            estimator.insert(d);
-        }
+    // gather the data
+    for _ in 0..ITERATIONS {
+        // prepare the input data
+        let input = File::open(format!("../data/data_{}_{}.txt", card, size))?;
+        let reader = BufReader::new(input);
+
+        // create the estimator
+        let mut estimator = HyperLogLogPF::<u64, _>::new(prec, RandomState::new()).unwrap();
+
+        // feed the data to the estimator
+        for line in reader.lines() {
+            let value = line.and_then(|l| l.trim().parse::<u64>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+            )?;
+            estimator.insert(&value);
+        };
+
+        // acquire the cardinality estimate
         let estimate = estimator.count();
+
+        // write the result to the out file
         writeln!(out, "{}", estimate).unwrap_or_else(|e| panic!("{}", e));
-    });
+    };
+
+    Ok(())
 }
 
-pub fn gather_gumbel<T: Hash>(prec: u8, card: usize, data: &[T]) {
-    let path = format!("../results/Gumbel_{}_{}_{}.txt", prec, card, data.len());
-    let mut out = File::create(path).unwrap_or_else(|e| panic!("{}", e));
+pub fn gather_gumbel(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
+    // prepare the output
+    let outpath = format!("../results/Gumbel_{}_{}_{}.txt", prec, card, size);
+    let mut out = File::create(outpath)?;
     
-    (0..ITERATIONS).for_each(|_| {
+    // gather the data
+    for _ in 0..ITERATIONS {
+        // prepare the input data
+        let input = File::open(format!("../data/data_{}_{}.txt", card, size))?;
+        let reader = BufReader::new(input);
+
+        // create the estimator
         let mut estimator = GumbelEstimator::<_>::with_precision(prec, RandomState::new()).unwrap();
-        for d in data {
-            estimator.add(d);
-        }
+
+        // feed the data to the estimator
+        for line in reader.lines() {
+            let value = line.and_then(|l| l.trim().parse::<u64>()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+            )?;
+            estimator.add(&value);
+        };
+
+        // acquire the cardinality estimate
         let estimate = estimator.count();
+
+        // write the result to the out file
         writeln!(out, "{}", estimate).unwrap_or_else(|e| panic!("{}", e));
-    });
+    };
+
+    Ok(())
 }

@@ -3,7 +3,6 @@ use std::io::{stdout, Write};
 use std::thread;
 use std::sync::{Arc, Mutex};
 
-use comparison::load_data;
 use comparison::constants::{CARDINALITIES, DATA_SIZE_MULTIPLIES, PRECISIONS};
 
 mod common;
@@ -15,15 +14,15 @@ fn main() {
 
     // take dataset specifications based on all combinations of
     // (cardinality, data_size) using the constants from constants.rs;
-    // datasets of size larger than million are ignored
+    // datasets of size larger than a billion are ignored
     let no_datasets = CARDINALITIES.len() * DATA_SIZE_MULTIPLIES.len();
     let data_sizes = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES);
 
     // prepare the handles
     let mut handles = Vec::new();
 
-    // create the counter of completed experiments
-    let completed_all = Arc::new(Mutex::new(0));
+    // create the counter for experiments done or in progress
+    let in_progress_all = Arc::new(Mutex::new(0));
 
     // gather the results; split the gatherer into threads based on precision
     for prec in PRECISIONS {
@@ -34,26 +33,30 @@ fn main() {
         let data_sizes_clone = data_sizes.clone();
 
         // get a shared reference to the counter of completed experiments
-        let completed = Arc::clone(&completed_all);
+        let in_progress = Arc::clone(&in_progress_all);
 
         let handle = thread::Builder::new()
             .name(format!("Thread prec={}", prec))
             .spawn(move || {
             for (card, mult) in data_sizes_clone {
-                // load data from file
-                let data: Vec<u64> = load_data(card, card * mult).unwrap();
+                {
+                    // update the completed datasets counter
+                    let mut count = in_progress.lock().unwrap();
+                    *count += 1;
+                    print!("\rin progress: {}/{}", count, total_experiments);
+                    stdout().flush().unwrap();
+                }
 
-                // gather Hyperloglog results
-                gather_hll(prec, card, &data);
+                // check dataset size; ignore if too large
+                if card * mult <= 1_000_000_000 {
+                    // gather Hyperloglog results
+                    gather_hll(prec, card, card * mult).unwrap();
 
-                // gather Gumbel results
-                gather_gumbel(prec, card, &data);
-
-                // update the completed datasets counter
-                let mut count = completed.lock().unwrap();
-                *count += 1;
-                print!("\rcompleted: {}/{}", count, total_experiments);
-                stdout().flush().unwrap();
+                    // gather Gumbel results
+                    gather_gumbel(prec, card, card * mult).unwrap();
+                } else {
+                    println!("Dataset is too large - skipping...");
+                }
             }
         }).unwrap();
 
