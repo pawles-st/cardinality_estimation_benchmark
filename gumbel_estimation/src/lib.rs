@@ -4,6 +4,10 @@ use rand::distributions::{Uniform};
 
 const NEG_GAMMA: f64 = -0.577_215_664_901_532_9_f64;
 
+mod registers;
+
+use crate::registers::Registers;
+
 #[derive(Debug)]
 pub enum GumbelError {
     InvalidPrecision,
@@ -14,7 +18,9 @@ pub struct GumbelEstimator<B: BuildHasher> {
     builder: B,
     precision: u8,
     no_registers: usize,
-    registers: Vec<f32>,
+    registers: Registers,
+    //registers: Vec<u32>,
+    register_rounds: Vec<f32>,
 }
 
 impl<B: BuildHasher> GumbelEstimator<B> {
@@ -46,10 +52,28 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         let mut rng = thread_rng();
         let unif = Uniform::new(0.0, 1.0);
 
-        // initialise the registers to random gumbel values
-        let registers = (0..no_registers).map(|_| {
-            -f32::ln(-f32::ln(rng.sample(unif)))
+        // choose the randomised rounding values for each register
+        let register_rounds: Vec<f32> = (0..no_registers).map(|_| {
+            rng.sample(unif)
         }).collect();
+
+        // initialise the registers to random gumbel values
+        let mut registers = Registers::new(no_registers);
+        for (i, &c) in register_rounds.iter().enumerate() {
+            let q = rng.sample(unif);
+            let gumbel_value = Self::gumbel_quantile(q);
+            let rounded = Self::shift_round(gumbel_value, c);
+            registers.set(i, rounded);
+        }
+        /*
+         *let registers = (0..no_registers).map(|i| {
+         *    let q = rng.sample(unif);
+         *    let gumbel_value = Self::gumbel_quantile(q);
+         *    let c = register_rounds[i];
+         *    let rounded = Self::shift_round(gumbel_value, c);
+         *    u32::min(rounded, (1 << 5) - 1)
+         *}).collect();
+         */
 
         // create the estimator object
         Ok(Self {
@@ -57,6 +81,7 @@ impl<B: BuildHasher> GumbelEstimator<B> {
             precision,
             no_registers,
             registers,
+            register_rounds,
         })
     }
 
@@ -71,19 +96,30 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         hash <<= self.precision;
 
         // create a gumbel random variable
-        let gumbel_value = Self::gen_gumbel(hash);
+        let gumbel_value = Self::gen_gumbel_rounded(
+            hash,
+            self.register_rounds[index]
+        );
 
         // update the register to the max of the gumbel random variables
-        self.registers[index] = f32::max(self.registers[index], gumbel_value);
-        //self.registers.set_greater(register_index, gumbel_value);
+        //self.registers[index] = f32::max(self.registers[index], gumbel_value);
+        //self.registers[index] = u32::max(self.registers[index], u32::min(gumbel_value, (1 << 5) - 1));
+        self.registers.set_greater(index, gumbel_value);
     }
 
     pub fn count(&self) -> f64 {
-        // calculate the mean of the registers
-        let registers_mean = self.registers.iter().map(|&val| val as f64).sum::<f64>() / (self.no_registers as f64);
+        // apply the second half of shift rounding
+        // and calculate the mean of the registers
+        let registers_sum = self.registers.iter()
+            .enumerate()
+            //.map(|(i, &val)| val as f64 - self.register_rounds[i] as f64)
+            .map(|(i, val)| val as f64 - self.register_rounds[i] as f64)
+            .sum::<f64>();
+        let registers_mean = registers_sum / (self.no_registers as f64);
         
         // return the cardinality estimate
-        self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
+        self.no_registers as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean)
+        //self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
     }
 
     #[inline(always)]
@@ -99,6 +135,22 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         let random_unif = f32::from_bits(bits) - 1.0;
 
         // create a gumbel random variable
-        -f32::ln(-f32::ln(random_unif))
+        Self::gumbel_quantile(random_unif)
+    }
+
+    #[inline(always)]
+    fn gumbel_quantile(q: f32) -> f32 {
+        -f32::ln(-f32::ln(q))
+    }
+
+    #[inline(always)]
+    fn gen_gumbel_rounded(hash: u32, c: f32) -> u32 {
+        let gumbel_value = Self::gen_gumbel(hash);
+        Self::shift_round(gumbel_value, c)
+    }
+
+    #[inline(always)]
+    fn shift_round(value: f32, c: f32) -> u32 {
+        f32::floor(value + c) as u32
     }
 }
