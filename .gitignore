@@ -3,3 +3,4 @@
 /gumbel_estimation/Cargo.lock
 /data
 /**/*.png
+/results/*

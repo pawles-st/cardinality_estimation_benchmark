@@ -1,38 +1,68 @@
 use itertools::iproduct;
+use std::io::{stdout, Write};
+use std::thread;
+use std::sync::{Arc, Mutex};
 
-use comparison::{CARDINALITIES, DATA_SIZE_MULTIPLIES, load_data};
+use comparison::load_data;
+use comparison::constants::{CARDINALITIES, DATA_SIZE_MULTIPLIES, PRECISIONS};
 
 mod common;
 
-use crate::common::{estimate_hll, estimate_gumbel};
+use crate::common::{gather_hll, gather_gumbel};
 
 fn main() {
-
     println!("Gathering results...");
 
-    // take all combinations of (cardinality, data_size) except the largest (that would amount to 200 GB of data)
+    // take dataset specifications based on all combinations of
+    // (cardinality, data_size) using the constants from constants.rs;
+    // datasets of size larger than million are ignored
+    let no_datasets = CARDINALITIES.len() * DATA_SIZE_MULTIPLIES.len();
+    let data_sizes = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES);
 
-    let no_datasets = CARDINALITIES.len() * DATA_SIZE_MULTIPLIES.len() - 1;
-    let data_sizes = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES).take(no_datasets);
+    // prepare the handles
+    let mut handles = Vec::new();
 
-    // gather the results
+    // create the counter of completed experiments
+    let completed_all = Arc::new(Mutex::new(0));
 
-    for (i, (card, mult)) in data_sizes.enumerate() {
+    // gather the results; split the gatherer into threads based on precision
+    for prec in PRECISIONS {
+        // total number of experiments
+        let total_experiments = no_datasets * PRECISIONS.len();
 
-        println!("Analysing dataset {}/{}", i + 1, no_datasets);
+        // clone the data iterators
+        let data_sizes_clone = data_sizes.clone();
 
-        // load data from file
-        
-        println!("Loading data...");
-        let data: Vec<u64> = load_data(card, card * mult)
-            .unwrap_or_else(|e| panic!("Error while loading data for card={}, size={}: {}", card, card * mult, e));
+        // get a shared reference to the counter of completed experiments
+        let completed = Arc::clone(&completed_all);
 
-        // gather Hyperloglog results
+        let handle = thread::Builder::new()
+            .name(format!("Thread prec={}", prec))
+            .spawn(move || {
+            for (card, mult) in data_sizes_clone {
+                // load data from file
+                let data: Vec<u64> = load_data(card, card * mult).unwrap();
 
-        perform!("HyperLogLog", 4, card, data);
+                // gather Hyperloglog results
+                gather_hll(prec, card, &data);
 
-        // gather Gumbel results
+                // gather Gumbel results
+                gather_gumbel(prec, card, &data);
 
-        perform!("Gumbel", 4, card, data);
+                // update the completed datasets counter
+                let mut count = completed.lock().unwrap();
+                *count += 1;
+                print!("\rcompleted: {}/{}", count, total_experiments);
+                stdout().flush().unwrap();
+            }
+        }).unwrap();
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        if let Err(e) = handle.join() {
+            eprintln!("Thread panicked: {:?}", e);
+        }
     }
 }
