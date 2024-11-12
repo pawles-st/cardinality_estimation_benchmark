@@ -1,11 +1,12 @@
 use criterion::*;
 use itertools::iproduct;
 
-use comparison::{CARDINALITIES, DATA_SIZE_MULTIPLIES, load_data};
+use comparison::load_data;
+use comparison::constants::{CARDINALITIES, DATA_SIZE_MULTIPLIES};
 
 mod common;
 
-use crate::common::{estimate_hll, estimate_gumbel};
+use crate::common::{bench_hll, bench_gumbel};
 
 fn benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("Hyperloglog vs Gumbel");
@@ -21,11 +22,11 @@ fn benchmark(c: &mut Criterion) {
 
         // perform Hyperloglog benchmark
 
-        perform!("HyperLogLog", group, 4, card, data);
+        bench_hll(&mut group, 4, card, &data);
 
         // perform Gumbel benchmark
 
-        perform!("Gumbel", group, 4, card, data);
+        bench_gumbel(&mut group, 4, card, &data);
     }
 }
 

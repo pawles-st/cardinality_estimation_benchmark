@@ -5,17 +5,7 @@ use gumbel_estimation::GumbelEstimator;
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 use std::hash::Hash;
 
-#[macro_export]
-macro_rules! perform {
-    ("HyperLogLog", $g:expr, $m:expr, $card:expr, $data:expr) => {
-        estimate_hll(&mut ($g), $m, $card, &($data));
-    };
-    ("Gumbel", $g:expr, $m:expr, $card:expr, $data:expr) => {
-        estimate_gumbel(&mut ($g), $m, $card, &($data));
-    };
-}
-
-pub fn estimate_hll<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
+pub fn bench_hll<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
 where
     T: Hash,
     M: Measurement,
@@ -29,7 +19,7 @@ where
     }));
 }
 
-pub fn estimate_gumbel<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
+pub fn bench_gumbel<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
 where
     T: Hash,
     M: Measurement,
