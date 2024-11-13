@@ -3,11 +3,8 @@ use std::io::{stdout, Write};
 use std::thread;
 use std::sync::{Arc, Mutex};
 
+use comparison::{gather_hll, gather_gumbel, gather_gumbel_lazy};
 use comparison::constants::{CARDINALITIES, DATA_SIZE_MULTIPLIES, PRECISIONS};
-
-mod common;
-
-use crate::common::{gather_hll, gather_gumbel};
 
 fn main() {
     println!("Gathering results...");
@@ -50,10 +47,12 @@ fn main() {
                 // check dataset size; ignore if too large
                 if card * mult <= 1_000_000_000 {
                     // gather Hyperloglog results
-                    gather_hll(prec, card, card * mult).unwrap();
+                    //gather_hll(prec, card, card * mult).unwrap();
 
                     // gather Gumbel results
-                    gather_gumbel(prec, card, card * mult).unwrap();
+                    //gather_gumbel(prec, card, card * mult).unwrap();
+
+                    gather_gumbel_lazy(prec, card, card * mult).unwrap();
                 } else {
                     println!("Dataset is too large - skipping...");
                 }

@@ -3,7 +3,22 @@ use criterion::*;
 use criterion::measurement::Measurement;
 use gumbel_estimation::GumbelEstimator;
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
+use std::fs::File;
 use std::hash::Hash;
+use std::io;
+use std::io::{BufRead, BufReader};
+
+pub fn load_data(card: usize, size: usize) -> Result<Vec<u64>, io::Error>
+{
+    let file = File::open(format!("../data/data_{}_{}.txt", card, size))?;
+    let reader = BufReader::new(file);
+
+    reader.lines().map(|l| {
+        l.and_then(|l| l.trim().parse::<u64>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        )
+    }).collect()
+}
 
 pub fn bench_hll<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
 where
