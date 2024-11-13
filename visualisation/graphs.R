@@ -1,9 +1,11 @@
 # datasets config
 
 #cardinalities <- c(1000, 10000, 100000, 1000000)
-cardinalities <- c(1000)
-data.size.multiplies <- c(1, 10, 100, 1000, 10000)
+cardinalities <- c(100000)
+data.size.multiplies <- c(1, 100)
+precisions <- c(4, 8, 12, 16)
 iters <- 100
+no.algorithms <- 2
 
 # create the cartesian product without the last element
 
@@ -12,41 +14,50 @@ datasets <- datasets[-nrow(datasets), ]
 
 # create the plots
 
+prec = 12
 for (card in cardinalities) {
 
 	# get HyperLogLog estimates
 
 	estimates.hll <- lapply(data.size.multiplies, function(mult) {
-		data.text <- paste(4, format(card, scientific = FALSE), format(card * mult, scientific = FALSE), sep = '_')
-		filename.hll <- paste0("../benchmark/target/accuracy/HyperLogLog_", data.text, ".txt")
-		estimates.hll <- list(scan(filename.hll, what = double(), nmax = iters))
+		data.text <- paste(prec, format(card, scientific = FALSE), format(card * mult, scientific = FALSE), sep = '_')
+		filename <- paste0("../results/HyperLogLog_", data.text, ".txt")
+		scan(filename, what = double(), nmax = iters)
 	})
 
 	# get Gumbel estimates
 
 	estimates.gumbel <- lapply(data.size.multiplies, function(mult) {
-		data.text <- paste(4, format(card, scientific = FALSE), format(card * mult, scientific = FALSE), sep = '_')
-		filename.gumbel <- paste0("../benchmark/target/accuracy/Gumbel_", data.text, ".txt")
-		estimates.gumbel <- list(scan(filename.gumbel, what = double(), nmax = iters))
+		data.text <- paste(prec, format(card, scientific = FALSE), format(card * mult, scientific = FALSE), sep = '_')
+		filename <- paste0("../results/Gumbel_", data.text, ".txt")
+		scan(filename, what = double(), nmax = iters)
 	})
+
+	# get Gumbel Lazy estimates
+
+	#estimates.gumbel.lazy <- lapply(data.size.multiplies, function(mult) {
+		#data.text <- paste(prec, format(card, scientific = FALSE), format(card * mult, scientific = FALSE), sep = '_')
+		#filename <- paste0("../results/GumbelLazy_", data.text, ".txt")
+		#scan(filename, what = double(), nmax = iters)
+	#})
 
 	# combine the estimates
 
-	estimates <- list()
-	for (i in 1:length(data.size.multiplies)) {
-		estimates <- c(estimates, estimates.hll[[i]], estimates.gumbel[[i]])
-	}
+	estimates.combined <- vector("list", length(data.size.multiplies) * no.algorithms)
+	estimates.combined[seq(1, length(estimates.combined), by = no.algorithms)] <- estimates.hll
+	estimates.combined[seq(2, length(estimates.combined), by = no.algorithms)] <- estimates.gumbel
+	#estimates.combined[seq(3, length(estimates.combined), by = no.algorithms)] <- estimates.gumbel.lazy
 
 	png("boxplot.png", width = 1920, height = 1080)
 
 	# create a comparison boxplot
 
-	boxplot(estimates,
+	boxplot(estimates.combined,
 		main = "Boxplots for cardinality estimators",
 		xlab = "Dataset size",
 		ylab = "Estimations",
-		names = format(card * rep(data.size.multiplies, each = 2), scientific = FALSE),
-		col = c("red", "blue"))
+		names = format(card * rep(data.size.multiplies, each = no.algorithms), scientific = FALSE),
+		col = rainbow(no.algorithms))
 
 	# mark the means
 
@@ -57,13 +68,13 @@ for (card in cardinalities) {
 
 	# mark the cardinality with a line
 
-	abline(a = card, b = 0, lwd = 2, col = 'green')
+	abline(h = card, lwd = 2, col = 'green')
 
 	# add a legend
 
-	legend("topright", legend = c("HyperLogLog", "Gumbel"), fill = c("red", "blue"), bty = "n")
+	legend("topright", legend = c("HyperLogLog", "Gumbel", "Gumbel Lazy"), fill = c("red", "blue", "yellow"), bty = "n")
 
 	dev.off()
 }
 
-#help('points')
+#help('vector')
