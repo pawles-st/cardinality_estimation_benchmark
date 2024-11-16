@@ -1,4 +1,5 @@
 use ahash::random_state::RandomState;
+use gen_data::generate;
 use gumbel_estimation::{GumbelEstimator, GumbelEstimatorLazy};
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 //use std::collections::hash_map::RandomState;
@@ -10,99 +11,121 @@ pub mod constants;
 
 use constants::ITERATIONS;
 
+pub fn create_output(alg: &str, prec: u8, card: usize, size: usize) -> Result<File, io::Error> {
+    let outpath = format!("../results/{}_{}_{}_{}.txt", alg, prec, card, size);
+    let out = File::create(outpath)?;
+
+    Ok(out)
+}
+
+pub fn create_input(card: usize, size: usize) -> Result<BufReader<File>, io::Error> {
+    let inpath = format!("../data/data_{}_{}.txt", card, size);
+    let input = match File::open(&inpath) {
+        Ok(file) => file,
+        Err(_) => {
+            println!("g");
+            let mut file = File::create(&inpath)?;
+            generate(&mut file, card, size)?;
+            file
+        }
+    };
+    let reader = BufReader::new(input);
+
+    Ok(reader)
+}
+
 pub fn gather_hll(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
-
     // prepare the output
-    let outpath = format!("../results/HyperLogLog_{}_{}_{}.txt", prec, card, size);
-    let mut out = File::create(outpath)?;
+    let mut out = create_output("HyperLogLog", prec, card, size)?;
     
-    // gather the data
-    for _ in 0..ITERATIONS {
-        // prepare the input data
-        let input = File::open(format!("../data/data_{}_{}.txt", card, size))?;
-        let reader = BufReader::new(input);
+    // prepare the input data
+    let reader = create_input(card, size)?;
+    
+    // create `ITERATIONS` independent estimators
+    let mut estimators: Vec<_> = (0..ITERATIONS).map(|_| HyperLogLogPF::<u64, _>::new(prec, RandomState::new()).unwrap()).collect();
 
-        // create the estimator
-        let mut estimator = HyperLogLogPF::<u64, _>::new(prec, RandomState::new()).unwrap();
+    // analyse the data
+    for line in reader.lines() {
+        // read the next value
+        let value = line.and_then(|l| l.trim().parse::<u64>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        )?;
 
-        // feed the data to the estimator
-        for line in reader.lines() {
-            let value = line.and_then(|l| l.trim().parse::<u64>()
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            )?;
+        // feed the value to each estimator
+        for estimator in &mut estimators {
             estimator.insert(&value);
         };
-
-        // acquire the cardinality estimate
-        let estimate = estimator.count();
-
-        // write the result to the out file
-        writeln!(out, "{}", estimate).unwrap_or_else(|e| panic!("{}", e));
     };
+
+    // acquire the cardinality estimate for each estimator and write the result
+    for estimator in &mut estimators {
+        let estimate = estimator.count();
+        writeln!(out, "{}", estimate)?;
+    }
 
     Ok(())
 }
 
 pub fn gather_gumbel(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
     // prepare the output
-    let outpath = format!("../results/Gumbel_{}_{}_{}.txt", prec, card, size);
-    let mut out = File::create(outpath)?;
+    let mut out = create_output("Gumbel", prec, card, size)?;
     
-    // gather the data
-    for _ in 0..ITERATIONS {
-        // prepare the input data
-        let input = File::open(format!("../data/data_{}_{}.txt", card, size))?;
-        let reader = BufReader::new(input);
+    // prepare the input data
+    let reader = create_input(card, size)?;
+    
+    // create `ITERATIONS` independent estimators
+    let mut estimators: Vec<_> = (0..ITERATIONS).map(|_| GumbelEstimator::<_>::with_precision(prec, RandomState::new()).unwrap()).collect();
 
-        // create the estimator
-        let mut estimator = GumbelEstimator::<_>::with_precision(prec, RandomState::new()).unwrap();
+    // analyse the data
+    for line in reader.lines() {
+        // read the next value
+        let value = line.and_then(|l| l.trim().parse::<u64>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        )?;
 
-        // feed the data to the estimator
-        for line in reader.lines() {
-            let value = line.and_then(|l| l.trim().parse::<u64>()
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            )?;
+        // feed the value to each estimator
+        for estimator in &mut estimators {
             estimator.add(&value);
         };
-
-        // acquire the cardinality estimate
-        let estimate = estimator.count();
-
-        // write the result to the out file
-        writeln!(out, "{}", estimate).unwrap_or_else(|e| panic!("{}", e));
     };
+
+    // acquire the cardinality estimate for each estimator and write the result
+    for estimator in &mut estimators {
+        let estimate = estimator.count();
+        writeln!(out, "{}", estimate)?;
+    }
 
     Ok(())
 }
 
 pub fn gather_gumbel_lazy(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
     // prepare the output
-    let outpath = format!("../results/GumbelLazy_{}_{}_{}.txt", prec, card, size);
-    let mut out = File::create(outpath)?;
+    let mut out = create_output("GumbelLazy", prec, card, size)?;
     
-    // gather the data
-    for _ in 0..ITERATIONS {
-        // prepare the input data
-        let input = File::open(format!("../data/data_{}_{}.txt", card, size))?;
-        let reader = BufReader::new(input);
+    // prepare the input data
+    let reader = create_input(card, size)?;
+    
+    // create `ITERATIONS` independent estimators
+    let mut estimators: Vec<_> = (0..ITERATIONS).map(|_| GumbelEstimatorLazy::<_>::with_precision(prec, RandomState::new()).unwrap()).collect();
 
-        // create the estimator
-        let mut estimator = GumbelEstimatorLazy::<_>::with_precision(prec, RandomState::new()).unwrap();
+    // analyse the data
+    for line in reader.lines() {
+        // read the next value
+        let value = line.and_then(|l| l.trim().parse::<u64>()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        )?;
 
-        // feed the data to the estimator
-        for line in reader.lines() {
-            let value = line.and_then(|l| l.trim().parse::<u64>()
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-            )?;
+        // feed the value to each estimator
+        for estimator in &mut estimators {
             estimator.add(&value);
         };
-
-        // acquire the cardinality estimate
-        let estimate = estimator.count();
-
-        // write the result to the out file
-        writeln!(out, "{}", estimate).unwrap_or_else(|e| panic!("{}", e));
     };
+
+    // acquire the cardinality estimate for each estimator and write the result
+    for estimator in &mut estimators {
+        let estimate = estimator.count();
+        writeln!(out, "{}", estimate)?;
+    }
 
     Ok(())
 }

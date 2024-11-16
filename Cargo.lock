@@ -124,6 +124,7 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "criterion",
+ "gen_data",
  "gumbel_estimation",
  "hyperloglogplus",
  "itertools 0.13.0",

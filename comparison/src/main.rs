@@ -40,18 +40,19 @@ fn main() {
                     // update the completed datasets counter
                     let mut count = in_progress.lock().unwrap();
                     *count += 1;
-                    print!("\rin progress: {}/{}", count, total_experiments);
+                    print!("\rin progress: {}/{}; ", count, total_experiments);
                     stdout().flush().unwrap();
                 }
 
                 // check dataset size; ignore if too large
                 if card * mult <= 1_000_000_000 {
                     // gather Hyperloglog results
-                    //gather_hll(prec, card, card * mult).unwrap();
+                    gather_hll(prec, card, card * mult).unwrap();
 
                     // gather Gumbel results
-                    //gather_gumbel(prec, card, card * mult).unwrap();
+                    gather_gumbel(prec, card, card * mult).unwrap();
 
+                    // gather GumbelLazy results
                     gather_gumbel_lazy(prec, card, card * mult).unwrap();
                 } else {
                     println!("Dataset is too large - skipping...");

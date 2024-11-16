@@ -8,6 +8,7 @@ criterion = "0.5.1"
 
 [dependencies]
 ahash = "0.8.11"
+gen_data = { path = "../gen_data" }
 gumbel_estimation = { path = "../gumbel_estimation" }
 itertools = "0.13.0"
 hyperloglogplus = "0.4.1"
