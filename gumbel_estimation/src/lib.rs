@@ -20,7 +20,6 @@ pub struct GumbelEstimator<B: BuildHasher> {
     precision: u8,
     no_registers: usize,
     registers: Registers,
-    //registers: Vec<u32>,
     register_rounds: Vec<f32>,
 }
 
@@ -64,15 +63,6 @@ impl<B: BuildHasher> GumbelEstimator<B> {
             let gumbel_value = gen_gumbel::quantile_rounded(q, c);
             registers.set(i, gumbel_value);
         }
-        /*
-         *let registers = (0..no_registers).map(|i| {
-         *    let q = rng.sample(unif);
-         *    let gumbel_value = Self::gumbel_quantile(q);
-         *    let c = register_rounds[i];
-         *    let rounded = Self::shift_round(gumbel_value, c);
-         *    u32::min(rounded, (1 << 5) - 1)
-         *}).collect();
-         */
 
         // create the estimator object
         Ok(Self {
@@ -101,8 +91,6 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         );
 
         // update the register to the max of the gumbel random variables
-        //self.registers[index] = f32::max(self.registers[index], gumbel_value);
-        //self.registers[index] = u32::max(self.registers[index], u32::min(gumbel_value, (1 << 5) - 1));
         self.registers.set_greater(index, gumbel_value);
     }
 
@@ -111,14 +99,12 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         // and calculate the mean of the registers
         let registers_sum = self.registers.iter()
             .enumerate()
-            //.map(|(i, &val)| val as f64 - self.register_rounds[i] as f64)
             .map(|(i, val)| val as f64 - self.register_rounds[i] as f64)
             .sum::<f64>();
         let registers_mean = registers_sum / (self.no_registers as f64);
         
         // return the cardinality estimate
         self.no_registers as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean)
-        //self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
     }
 }
 
@@ -127,8 +113,7 @@ pub struct GumbelEstimatorLazy<B: BuildHasher> {
     builder: B,
     precision: u8,
     no_registers: usize,
-    registers: Registers,
-    //registers: Vec<u32>,
+    registers: Vec<u32>,
 }
 
 impl<B: BuildHasher> GumbelEstimatorLazy<B> {
@@ -159,21 +144,10 @@ impl<B: BuildHasher> GumbelEstimatorLazy<B> {
         let mut rng = thread_rng();
         let unif = Uniform::new(0, u32::MAX);
 
-        // initialise the registers to random 
-        let mut registers = Registers::new(no_registers);
-        for i in 0..no_registers {
-            let q = rng.sample(unif);
-            registers.set(i, q);
-        }
-        /*
-         *let registers = (0..no_registers).map(|i| {
-         *    let q = rng.sample(unif);
-         *    let gumbel_value = Self::gumbel_quantile(q);
-         *    let c = register_rounds[i];
-         *    let rounded = Self::shift_round(gumbel_value, c);
-         *    u32::min(rounded, (1 << 5) - 1)
-         *}).collect();
-         */
+        // initialise the registers to random bitstrings ("hashes")
+        let registers = (0..no_registers).map(|_| {
+            rng.sample(unif)
+        }).collect();
 
         // create the estimator object
         Ok(Self {
@@ -194,26 +168,18 @@ impl<B: BuildHasher> GumbelEstimatorLazy<B> {
         // discard the above bits from the hash
         hash <<= self.precision;
 
-        // leave only the next 5 bits of the hash
-        hash >>= 27;
-
-        // update the register to the max of the gumbel random variables
-        //self.registers[index] = f32::max(self.registers[index], gumbel_value);
-        //self.registers[index] = u32::max(self.registers[index], u32::min(gumbel_value, (1 << 5) - 1));
-        self.registers.set_greater(index, hash);
+        // update the register to the max of the hashes
+        self.registers[index] = u32::max(self.registers[index], hash);
     }
 
     pub fn count(&self) -> f64 {
-        // apply the second half of shift rounding
-        // and calculate the mean of the registers
+        // calculate the mean of the registers
         let registers_sum = self.registers.iter()
-            //.map(|(i, &val)| val as f64 - self.register_rounds[i] as f64)
-            .map(|val| gen_gumbel::from_bits(val << 27) as f64)
+            .map(|&val| gen_gumbel::from_bits(val) as f64)
             .sum::<f64>();
         let registers_mean = registers_sum / (self.no_registers as f64);
         
         // return the cardinality estimate
-        self.no_registers as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean)
-        //self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
+        self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
     }
 }
