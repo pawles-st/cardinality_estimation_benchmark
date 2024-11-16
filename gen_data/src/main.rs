@@ -1,17 +1,8 @@
-use rand::{Rng, thread_rng};
-use rand::distributions::Uniform;
-use std::collections::HashSet;
 use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io;
-use std::io::Write;
 
-struct Setup {
-    out: File,
-    card: usize,
-    size: usize,
-}
+use gen_data::generate;
 
 fn print_help() {
     println!("Usage: cargo run <output_file> <card> <size>\n");
@@ -23,7 +14,7 @@ fn print_help() {
     println!("cargo run data_1000_100000.txt 1000 100000");
 }
 
-fn parse_args() -> Result<Setup, Box<dyn Error>> {
+fn parse_args() -> Result<(File, usize, usize), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect::<Vec<_>>();
     if args.len() != 4 {
         print_help();
@@ -38,38 +29,12 @@ fn parse_args() -> Result<Setup, Box<dyn Error>> {
         return Err("dataset size has to be at least the size of its cardinality".into());
     }
 
-    Ok(Setup{out, card, size})
-}
-
-fn gen_data(s: &mut Setup) -> io::Result<()> {
-    let mut rng = thread_rng();
-    let unif_elem = Uniform::new(0, u64::MAX);
-    let unif_index = Uniform::new(0, s.card);
-
-    let mut universe = HashSet::new();
-    while universe.len() < s.card {
-        let elem = rng.sample(unif_elem);
-        universe.insert(elem);
-    }
-
-    universe.iter().try_for_each(|elem| {
-        writeln!(s.out, "{}", elem)
-    })?;
-
-    let universe_vec: Vec<u64> = universe.into_iter().collect();
-    let no_duplicates = s.size - s.card;
-    (0..no_duplicates).try_for_each(|_| {
-        let index = rng.sample(unif_index);
-        let elem = universe_vec[index];
-        writeln!(s.out, "{}", elem)
-    })?;
-
-    Ok(())
+    Ok((out, card, size))
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut setup = parse_args()?;
-    gen_data(&mut setup)?;
+    let (mut out, card, size) = parse_args()?;
+    generate(&mut out, card, size)?;
 
     Ok(())
 }
