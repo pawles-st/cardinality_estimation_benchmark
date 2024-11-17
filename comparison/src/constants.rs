@@ -1,9 +1,26 @@
+// create a const array from a start value and step
+const fn array_from_range<const K: usize>(begin: usize, step: usize) -> [usize; K] {
+    // create the array
+    let mut result = [0; K];
+
+    // Fill the array with values
+    let mut curr = begin;
+    let mut index = 0;
+    while index < K {
+        result[index] = curr;
+        curr += step;
+        index += 1;
+    }
+
+    result   
+}
+
 // cardinalities of the underlying multisets
-pub const CARDINALITIES: [usize; 4] = [1_000, 10_000, 100_000, 1_000_000];
+pub const CARDINALITIES: [usize; 20] = array_from_range(10_000, 10_000);
 
 // dataset size multiplies; the size of the dataset
 // is calculated as `cardinality * data_size_multiply`
-pub const DATA_SIZE_MULTIPLIES: [usize; 3] = [1, 100, 10_000];
+pub const DATA_SIZE_MULTIPLIES: [usize; 1] = [100];
 
 // precisions to use for the HyperLogLog and Gumbel estimators;
 // the number of registers used is equal to `2^precision`
