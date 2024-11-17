@@ -12,7 +12,7 @@ fn main() {
     // take dataset specifications based on all combinations of
     // (cardinality, data_size) using the constants from constants.rs;
     // datasets of size larger than a billion are ignored
-    let data_sizes: Vec<_> = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES).filter(|(card, mult)| card * mult <= 1_000_000_00).collect();
+    let data_sizes: Vec<_> = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES).filter(|(card, mult)| card * mult <= 1_000_000_000).collect();
     let no_datasets = data_sizes.len();
 
     // prepare the handles
