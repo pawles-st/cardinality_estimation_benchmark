@@ -9,8 +9,8 @@ use crate::common::{bench_hll, bench_gumbel, bench_gumbel_lazy, load_data};
 
 fn benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("Hyperloglog vs Gumbel");
-    let data_sizes = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES)
-        .take(CARDINALITIES.len() * DATA_SIZE_MULTIPLIES.len() - 1);
+    
+    let data_sizes: Vec<_> = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES).filter(|(card, mult)| card * mult <= 1_000_000_000).collect();
 
     for (card, mult) in data_sizes {
 
