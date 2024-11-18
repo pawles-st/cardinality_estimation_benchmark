@@ -20,7 +20,6 @@ pub struct GumbelEstimator<B: BuildHasher> {
     precision: u8,
     no_registers: usize,
     registers: Registers,
-    register_rounds: Vec<f32>,
 }
 
 impl<B: BuildHasher> GumbelEstimator<B> {
@@ -51,15 +50,11 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         let mut rng = thread_rng();
         let unif = Uniform::new(0.0, 1.0);
 
-        // choose the randomised rounding values for each register
-        let register_rounds: Vec<f32> = (0..no_registers).map(|_| {
-            rng.sample(unif)
-        }).collect();
-
         // initialise the registers to random gumbel values
         let mut registers = Registers::new(no_registers);
-        for (i, &c) in register_rounds.iter().enumerate() {
+        for i in 0..no_registers {
             let q = rng.sample(unif);
+            let c = gen_gumbel::mantissa_to_float(builder.hash_one(i) as u32);
             let gumbel_value = gen_gumbel::quantile_rounded(q, c);
             registers.set(i, gumbel_value);
         }
@@ -70,7 +65,6 @@ impl<B: BuildHasher> GumbelEstimator<B> {
             precision,
             no_registers,
             registers,
-            register_rounds,
         })
     }
 
@@ -87,7 +81,7 @@ impl<B: BuildHasher> GumbelEstimator<B> {
         // create a gumbel random variable
         let gumbel_value = gen_gumbel::from_bits_rounded(
             hash,
-            self.register_rounds[index]
+            gen_gumbel::mantissa_to_float(self.builder.hash_one(index) as u32)
         );
 
         // update the register to the max of the gumbel random variables
@@ -96,28 +90,26 @@ impl<B: BuildHasher> GumbelEstimator<B> {
 
     pub fn count_geo(&self) -> f64 {
         // apply the second half of shift rounding
-        // and calculate the mean of the registers
+        // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
             .enumerate()
-            .map(|(i, val)| val as f64 - self.register_rounds[i] as f64)
+            .map(|(i, val)| val as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
-        // return the cardinality estimate
         self.no_registers as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean)
     }
     
     pub fn count_har(&self) -> f64 {
         // apply the second half of shift rounding
-        // and calculate the mean of the `exp(-register)` terms
+        // and calculate the harmonic mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
             .enumerate()
-            .map(|(i, val)| 1.0 / f64::exp(val as f64 + 0.5 - self.register_rounds[i] as f64))
+            .map(|(i, val)| f64::exp(-(val as f64 + 0.5 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)))
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
-        // return the cardinality estimate
-        self.no_registers as f64 / registers_mean as f64 - 1.0
+        self.no_registers as f64 / registers_mean - 1.0
     }
 }
 
@@ -192,7 +184,6 @@ impl<B: BuildHasher> GumbelEstimatorLazy<B> {
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
-        // return the cardinality estimate
         self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
     }
     
@@ -204,7 +195,6 @@ impl<B: BuildHasher> GumbelEstimatorLazy<B> {
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
-        // return the cardinality estimate
         self.no_registers as f64 / registers_mean - 1f64
     }
 }

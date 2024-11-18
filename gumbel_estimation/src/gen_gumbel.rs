@@ -1,6 +1,5 @@
-// create a gumbel random value from a bit representation of a [0, 1) float
-#[inline(always)]
-pub fn from_bits(bits: u32) -> f32 {
+// create a [0, 1) float from its mantissa bit represenations
+pub fn mantissa_to_float(bits: u32) -> f32 {
     // create the exponent and mantissa bits
     let exponent_bits = 127 << 23;
     let mantissa_bits = bits >> 9;
@@ -8,8 +7,14 @@ pub fn from_bits(bits: u32) -> f32 {
     // combine the bits
     let bits = exponent_bits | mantissa_bits;
 
+    f32::from_bits(bits)
+}
+
+// create a gumbel random value from a mantissa bit representation of a [0, 1) float
+#[inline(always)]
+pub fn from_bits(bits: u32) -> f32 {
     // create a random [0, 1) float
-    let random_unif = f32::from_bits(bits) - 1.0;
+    let random_unif = mantissa_to_float(bits) - 1.0;
 
     // create a gumbel random variable
     quantile(random_unif)
