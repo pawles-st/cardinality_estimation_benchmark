@@ -1,6 +1,12 @@
-/target
-/**/target
 /gumbel_estimation/Cargo.lock
 /data
-/**/*.png
 /results/*
+
+/**/-
+/**/=
+/**/\\
+
+/**/target
+/**/*.png
+/**/*.svg
+/**/perf.data*
