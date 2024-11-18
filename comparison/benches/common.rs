@@ -1,7 +1,7 @@
 use ahash::random_state::RandomState;
 use criterion::*;
 use criterion::measurement::Measurement;
-use gumbel_estimation::GumbelEstimator;
+use gumbel_estimation::{GumbelEstimator, GumbelEstimatorLazy};
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 use std::fs::File;
 use std::hash::Hash;
@@ -44,6 +44,20 @@ where
         for d in data {
             estimator.add(d);
         }
-        let _estimate = estimator.count();
+        let _estimate = estimator.count_geo();
+    }));
+}
+
+pub fn bench_gumbel_lazy<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
+where
+    T: Hash,
+    M: Measurement,
+{
+    g.bench_with_input(BenchmarkId::new("GumbelLazy", format!("{}/{}/{}", prec, card, data.len())), data, |b, data| b.iter(|| {
+        let mut estimator = GumbelEstimatorLazy::<_>::with_precision(prec, RandomState::new()).unwrap();
+        for d in data {
+            estimator.add(d);
+        }
+        let _estimate = estimator.count_geo();
     }));
 }

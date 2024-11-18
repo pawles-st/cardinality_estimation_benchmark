@@ -5,7 +5,7 @@ use comparison::constants::{CARDINALITIES, DATA_SIZE_MULTIPLIES};
 
 mod common;
 
-use crate::common::{bench_hll, bench_gumbel, load_data};
+use crate::common::{bench_hll, bench_gumbel, bench_gumbel_lazy, load_data};
 
 fn benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("Hyperloglog vs Gumbel");
@@ -26,6 +26,10 @@ fn benchmark(c: &mut Criterion) {
         // perform Gumbel benchmark
 
         bench_gumbel(&mut group, 4, card, &data);
+
+        // perform GumbelLazy benchmark
+
+        bench_gumbel_lazy(&mut group, 4, card, &data);
     }
 }
 
