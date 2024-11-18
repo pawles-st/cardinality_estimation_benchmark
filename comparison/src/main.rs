@@ -59,4 +59,6 @@ fn main() {
     for handle in handles {
         let _ = handle.join();
     }
+
+    println!();
 }
