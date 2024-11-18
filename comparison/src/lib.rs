@@ -33,14 +33,16 @@ pub fn gather(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
 
     // prepare the output
     let mut hll_out = create_output("HyperLogLog", prec, card, size)?;
-    let mut gumbel_out = create_output("Gumbel", prec, card, size)?;
-    let mut gumbel_lazy_out = create_output("GumbelLazy", prec, card, size)?;
+    let mut gumbel_geo_out = create_output("GumbelGeo", prec, card, size)?;
+    let mut gumbel_lazy_geo_out = create_output("GumbelLazyGeo", prec, card, size)?;
+    let mut gumbel_har_out = create_output("GumbelHar", prec, card, size)?;
+    let mut gumbel_lazy_har_out = create_output("GumbelLazyHar", prec, card, size)?;
     
     // create `ITERATIONS` independent estimators with a common random state
-    let builder = RandomState::new();
-    let mut hll_estimators: Vec<_> = (0..ITERATIONS).map(|_| HyperLogLogPF::<u64, _>::new(prec, builder.clone()).unwrap()).collect();
-    let mut gumbel_estimators: Vec<_> = (0..ITERATIONS).map(|_| GumbelEstimator::<_>::with_precision(prec, builder.clone()).unwrap()).collect();
-    let mut gumbel_lazy_estimators: Vec<_> = (0..ITERATIONS).map(|_| GumbelEstimatorLazy::<_>::with_precision(prec, builder.clone()).unwrap()).collect();
+    let builders: Vec<_> = (0..ITERATIONS).map(|_| RandomState::new()).collect();
+    let mut hll_estimators: Vec<_> = (0..ITERATIONS).map(|i| HyperLogLogPF::<u64, _>::new(prec, builders[i].clone()).unwrap()).collect();
+    let mut gumbel_estimators: Vec<_> = (0..ITERATIONS).map(|i| GumbelEstimator::<_>::with_precision(prec, builders[i].clone()).unwrap()).collect();
+    let mut gumbel_lazy_estimators: Vec<_> = (0..ITERATIONS).map(|i| GumbelEstimatorLazy::<_>::with_precision(prec, builders[i].clone()).unwrap()).collect();
 
     // analyse the data
     for line in reader.lines() {
@@ -67,12 +69,16 @@ pub fn gather(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
         writeln!(hll_out, "{}", estimate)?;
     }
     for estimator in &mut gumbel_estimators {
-        let estimate = estimator.count();
-        writeln!(gumbel_out, "{}", estimate)?;
+        let estimate = estimator.count_geo();
+        writeln!(gumbel_geo_out, "{}", estimate)?;
+        let estimate = estimator.count_har();
+        writeln!(gumbel_har_out, "{}", estimate)?;
     }
     for estimator in &mut gumbel_lazy_estimators {
-        let estimate = estimator.count();
-        writeln!(gumbel_lazy_out, "{}", estimate)?;
+        let estimate = estimator.count_geo();
+        writeln!(gumbel_lazy_geo_out, "{}", estimate)?;
+        let estimate = estimator.count_har();
+        writeln!(gumbel_lazy_har_out, "{}", estimate)?;
     }
 
     Ok(())
