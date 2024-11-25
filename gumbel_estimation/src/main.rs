@@ -1,4 +1,4 @@
-use gumbel_estimation::{GumbelEstimator, GumbelEstimatorLazy};
+use gumbel_estimation::{GHLL, GHLLPlus};
 use std::collections::hash_map::RandomState;
 use std::error::Error;
 use std::fs::File;
@@ -19,20 +19,20 @@ pub fn load_data(card: usize, size: usize) -> Result<Vec<u64>, io::Error>
 
 fn main() -> Result<(), Box<dyn Error>> {
     let builder = RandomState::new();
-    let data = load_data(600_000, 60_000_000)?;
+    let data = load_data(10000, 1_000_000)?;
 
-    let mut g = GumbelEstimator::<_>::with_precision(12, builder.clone()).unwrap();
-    for d in data {
-        g.add(&d);
+    let mut ghll = GHLL::<_>::with_precision(10, builder.clone()).unwrap();
+    for d in data.iter() {
+        ghll.add(&d);
     }
-    println!("{}", g.count_geo());
-    println!("{}", g.count_har());
+    println!("GHLL (geo): {}", ghll.count_geo());
+    println!("GHLL (har): {}", ghll.count_har());
 
-    //let mut gl = GumbelEstimatorLazy::<_>::with_precision(8, builder.clone()).unwrap();
-    //for d in data {
-        //gl.add(&d);
-    //}
-    //println!("{}", gl.count_geo());
+    let mut ghllp = GHLLPlus::<_>::with_precision(10, builder.clone()).unwrap();
+    for d in data.iter() {
+        ghllp.add(&d);
+    }
+    println!("GHLL Plus: {}", ghllp.count());
 
     Ok(())
 }
