@@ -1,3 +1,8 @@
+const MIN_REGISTER_VALUE: f32 = -32.0;
+const MAX_REGISTER_VALUE: f32 = 31.0;
+
+pub const BIAS: u32 = 16;
+
 // create a [0, 1) float from its mantissa bit represenations
 pub fn mantissa_to_float(bits: u32) -> f32 {
     // create the exponent and mantissa bits
@@ -7,14 +12,14 @@ pub fn mantissa_to_float(bits: u32) -> f32 {
     // combine the bits
     let bits = exponent_bits | mantissa_bits;
 
-    f32::from_bits(bits)
+    f32::from_bits(bits) - 1.0
 }
 
 // create a gumbel random value from a mantissa bit representation of a [0, 1) float
 #[inline(always)]
 pub fn from_bits(bits: u32) -> f32 {
     // create a random [0, 1) float
-    let random_unif = mantissa_to_float(bits) - 1.0;
+    let random_unif = mantissa_to_float(bits);
 
     // create a gumbel random variable
     quantile(random_unif)
@@ -45,5 +50,5 @@ pub fn quantile_rounded(q: f32, c: f32) -> u32 {
 // perform shift rounding of a value using the rounding value of `c`
 #[inline(always)]
 pub fn shift_round(value: f32, c: f32) -> u32 {
-    f32::floor(value + c) as u32
+    f32::floor(value + c).clamp(MIN_REGISTER_VALUE, MAX_REGISTER_VALUE) as u32 + BIAS
 }

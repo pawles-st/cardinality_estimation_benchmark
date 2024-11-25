@@ -91,7 +91,7 @@ impl<B: BuildHasher> GHLLPlus<B> {
     }
 
     pub fn count(&self) -> f64 {
-        // check how many registers are free
+        // compute the numbers of free registers
         let no_free = self.free.count_ones();
 
         // apply low-range correction
@@ -104,7 +104,7 @@ impl<B: BuildHasher> GHLLPlus<B> {
         // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
             .enumerate()
-            .map(|(i, val)| val as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
+            .map(|(i, val)| (val - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
