@@ -85,7 +85,7 @@ impl<B: BuildHasher> GHLL<B> {
         // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
             .enumerate()
-            .map(|(i, val)| (val - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
+            .map(|(i, val)| (val as i32 - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
@@ -97,7 +97,7 @@ impl<B: BuildHasher> GHLL<B> {
         // and calculate the harmonic mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
             .enumerate()
-            .map(|(i, val)| f64::exp(-((val - gen_gumbel::BIAS) as f64 + 0.5 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)))
+            .map(|(i, val)| f64::exp(-((val as i32 - gen_gumbel::BIAS) as f64 + 0.5 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)))
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         

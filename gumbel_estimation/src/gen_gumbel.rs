@@ -1,7 +1,7 @@
-const MIN_REGISTER_VALUE: f32 = -32.0;
-const MAX_REGISTER_VALUE: f32 = 31.0;
+const MIN_REGISTER_VALUE: f32 = -16.0;
+const MAX_REGISTER_VALUE: f32 = 15.0;
 
-pub const BIAS: u32 = 16;
+pub const BIAS: i32 = 16;
 
 // create a [0, 1) float from its mantissa bit represenations
 pub fn mantissa_to_float(bits: u32) -> f32 {
@@ -50,5 +50,5 @@ pub fn quantile_rounded(q: f32, c: f32) -> u32 {
 // perform shift rounding of a value using the rounding value of `c`
 #[inline(always)]
 pub fn shift_round(value: f32, c: f32) -> u32 {
-    f32::floor(value + c).clamp(MIN_REGISTER_VALUE, MAX_REGISTER_VALUE) as u32 + BIAS
+    ((f32::floor(value + c).clamp(MIN_REGISTER_VALUE, MAX_REGISTER_VALUE) as i32) + BIAS) as u32
 }
