@@ -18,11 +18,13 @@ pub fn load_data(card: usize, size: usize) -> Result<Vec<u64>, io::Error>
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    const NO_REGISTERS: u8 = 12;
+
     let builder = RandomState::new();
     let data = load_data(100_000, 10_000_000)?;
 
     {
-        let mut ghll = GHLL::<_>::with_precision(16, builder.clone()).unwrap();
+        let mut ghll = GHLL::<_>::with_precision(NO_REGISTERS, builder.clone()).unwrap();
         for d in data.iter() {
             ghll.add(&d);
         }
@@ -31,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     {
-        let mut ghllp = GHLLPlus::<_>::with_precision(16, builder.clone()).unwrap();
+        let mut ghllp = GHLLPlus::<_>::with_precision(NO_REGISTERS, builder.clone()).unwrap();
         for d in data.iter() {
             ghllp.add(&d);
         }
@@ -39,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     {
-        let mut ghlls = GHLLS::<_>::with_precision(16, builder.clone()).unwrap();
+        let mut ghlls = GHLLS::<_>::with_precision(NO_REGISTERS, builder.clone()).unwrap();
         for d in data.iter() {
             ghlls.add(&d);
         }

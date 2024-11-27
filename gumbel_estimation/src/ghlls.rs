@@ -7,7 +7,7 @@ use crate::common::{NEG_GAMMA, GumbelError};
 use crate::gen_gumbel;
 use crate::registers::Registers;
 
-const THRESHOLD: f32 = 0.830721;
+const THRESHOLD: f32 = 0.731_447_7;
 
 /// A cardinality estimator using the Gumbel distribution
 pub struct GHLLS<B: BuildHasher> {
