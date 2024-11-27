@@ -85,7 +85,7 @@ impl<B: BuildHasher> GHLLS<B> {
 
     pub fn count(&self) -> f64 {
         // perform a free register hypothesis test for each register
-        let no_free = self.registers.iter().enumerate().filter(|(i, val)| (*val - gen_gumbel::BIAS) as f32 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) < THRESHOLD).count();
+        let no_free = self.registers.iter().enumerate().filter(|(i, val)| *val as f32 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) < THRESHOLD).count();
         
         // apply low-range correction
         if no_free != 0 && (no_free as f64) >= self.no_registers as f64 / E  {
@@ -97,7 +97,7 @@ impl<B: BuildHasher> GHLLS<B> {
         // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
             .enumerate()
-            .map(|(i, val)| (val - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
+            .map(|(i, val)| val as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
             .sum::<f64>();
         let registers_mean = registers_sum / self.no_registers as f64;
         
