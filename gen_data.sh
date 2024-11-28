@@ -1,7 +1,11 @@
 #!/bin/bash
 
-cardinalities=(1000 10000 100000 1000000)
-size_multiplies=(1 10 100 1000 10000)
+cardinalities=()
+size_multiplies=(100)
+
+for i in {1..100}; do
+	cardinalities+=($((i * 10000)))
+done
 
 for card in "${cardinalities[@]}"; do
 	for mult in "${size_multiplies[@]}"; do
