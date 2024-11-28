@@ -9,7 +9,7 @@ iters <- 100
 
 # algorithms to analyse
 
-algorithms <- c("HyperLogLog", "GumbelGeo", "GumbelLazyGeo", "GumbelHar", "GumbelLazyHar")
+algorithms <- c("HLL", "GHLLGeo", "GHLLHar", "GHLLPlus")
 no.algorithms <- length(algorithms)
 
 # create the plots

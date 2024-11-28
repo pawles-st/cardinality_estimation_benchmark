@@ -16,7 +16,6 @@ no.algorithms <- length(algorithms)
 
 for (prec in precisions) {
 
-	estimates <- list()
 	means <- c()
 
 	for (card in cardinalities) {
@@ -25,33 +24,34 @@ for (prec in precisions) {
 
 		for (i in 1:no.algorithms) {
 			alg.estimates <- read.data(algorithms[i], prec, card, mult)
-			estimates <- c(estimates, list(alg.estimates / card))
 			means <- c(means, mean(alg.estimates) / card)
 		}
 	}
 
-	# create a comparison scatterplot
+	# create a comparison lineplot
 
-	png(paste0("scatter_", prec, ".png"), width = 1920, height = 1080)
+	png(paste0("line_", prec, ".png"), width = 1920, height = 1080)
 
-	plot(x = rep(cardinalities, each = no.algorithms * iters),
-		y = unlist(estimates),
-		main = "Scatter plot for cardinality estimators",
+	plot(x = cardinalities,
+		y = rep(1, length(cardinalities)),
+		main = "Line plot for cardinality estimators",
 		xlab = "Cardinality",
 		ylab = "Estimation / Cardinality",
-		col = rep(rep("green", each = iters), times = length(cardinalities)),
-		pch = 16,
+		ylim = c(0.9, 1.1),
+		type = "n",
 	)
 
 	# mark the means
 
-	plot(x = rep(cardinalities, each = no.algorithms),
-		y = means,
-		main = "Scatter plot for cardinality estimators",
-		xlab = "Cardinality",
-		ylab = "Estimation / Cardinality",
-		col = rep("red", times = length(cardinalities)),
-		pch = 16
+	cols <- rainbow(no.algorithms)
+	for (i in 1:no.algorithms)
+		lines(x = cardinalities,
+			y = means[seq(i, length(means), by = no.algorithms)],
+			main = "Line plot for cardinality estimators",
+			xlab = "Cardinality",
+			ylab = "Estimation / Cardinality",
+			col = cols[i],
+			lwd = 1.5,
 	)
 
 	# mark the ideal result with a line
