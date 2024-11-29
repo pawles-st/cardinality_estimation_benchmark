@@ -1,4 +1,4 @@
-use gumbel_estimation::{GHLL, GHLLPlus, GHLLS};
+use gumbel_estimation::{GHLL, GHLLPlus};
 use std::collections::hash_map::RandomState;
 use std::error::Error;
 use std::fs::File;
@@ -38,14 +38,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             ghllp.add(&d);
         }
         println!("GHLL Plus: {}", ghllp.count());
-    }
-
-    {
-        let mut ghlls = GHLLS::<_>::with_precision(NO_REGISTERS, builder.clone()).unwrap();
-        for d in data.iter() {
-            ghlls.add(&d);
-        }
-        println!("GHLLS: {}", ghlls.count());
     }
 
     Ok(())
