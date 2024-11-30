@@ -35,7 +35,8 @@ pub fn gather(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
     let mut hll_out = create_output("HLL", prec, card, size)?;
     let mut ghll_geo_out = create_output("GHLLGeo", prec, card, size)?;
     let mut ghll_har_out = create_output("GHLLHar", prec, card, size)?;
-    let mut ghllp_out = create_output("GHLLPlus", prec, card, size)?;
+    let mut ghllp_geo_out = create_output("GHLLPlusGeo", prec, card, size)?;
+    let mut ghllp_har_out = create_output("GHLLPlusHar", prec, card, size)?;
     
     // create `ITERATIONS` independent estimators with a common random state
     let builders: Vec<_> = (0..ITERATIONS).map(|_| RandomState::new()).collect();
@@ -74,8 +75,10 @@ pub fn gather(prec: u8, card: usize, size: usize) -> Result<(), io::Error> {
         writeln!(ghll_har_out, "{}", estimate)?;
     }
     for estimator in &mut ghllp_estimators {
-        let estimate = estimator.count();
-        writeln!(ghllp_out, "{}", estimate)?;
+        let estimate = estimator.count_geo();
+        writeln!(ghllp_geo_out, "{}", estimate)?;
+        let estimate = estimator.count_har();
+        writeln!(ghllp_har_out, "{}", estimate)?;
     }
 
     Ok(())

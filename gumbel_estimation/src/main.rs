@@ -37,7 +37,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         for d in data.iter() {
             ghllp.add(&d);
         }
-        println!("GHLL Plus: {}", ghllp.count());
+        println!("GHLL Plus (geo): {}", ghllp.count_geo());
+        println!("GHLL Plus (har): {}", ghllp.count_har());
     }
 
     Ok(())
