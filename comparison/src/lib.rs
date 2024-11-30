@@ -1,5 +1,5 @@
 use ahash::random_state::RandomState;
-use gumbel_estimation::{GHLL, GHLLPlus, GHLLS};
+use gumbel_estimation::{GHLL, GHLLPlus};
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 //use std::collections::hash_map::RandomState;
 use std::fs::File;
