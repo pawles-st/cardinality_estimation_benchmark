@@ -1,7 +1,7 @@
 use ahash::random_state::RandomState;
 use criterion::*;
 use criterion::measurement::Measurement;
-use gumbel_estimation::{GumbelEstimator, GumbelEstimatorLazy};
+use gumbel_estimation::{GHLL, GHLLPlus};
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 use std::fs::File;
 use std::hash::Hash;
@@ -34,13 +34,13 @@ where
     }));
 }
 
-pub fn bench_gumbel<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
+pub fn bench_ghll<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
 where
     T: Hash,
     M: Measurement,
 {
-    g.bench_with_input(BenchmarkId::new("Gumbel", format!("{}/{}/{}", prec, card, data.len())), data, |b, data| b.iter(|| {
-        let mut estimator = GumbelEstimator::<_>::with_precision(prec, RandomState::new()).unwrap();
+    g.bench_with_input(BenchmarkId::new("GumbelHyperLogLog", format!("{}/{}/{}", prec, card, data.len())), data, |b, data| b.iter(|| {
+        let mut estimator = GHLL::<_>::with_precision(prec, RandomState::new()).unwrap();
         for d in data {
             estimator.add(d);
         }
@@ -48,13 +48,13 @@ where
     }));
 }
 
-pub fn bench_gumbel_lazy<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
+pub fn bench_ghllplus<T, M>(g: &mut BenchmarkGroup<M>, prec: u8, card: usize, data: &[T])
 where
     T: Hash,
     M: Measurement,
 {
-    g.bench_with_input(BenchmarkId::new("GumbelLazy", format!("{}/{}/{}", prec, card, data.len())), data, |b, data| b.iter(|| {
-        let mut estimator = GumbelEstimatorLazy::<_>::with_precision(prec, RandomState::new()).unwrap();
+    g.bench_with_input(BenchmarkId::new("GumbelHyperLogLog+", format!("{}/{}/{}", prec, card, data.len())), data, |b, data| b.iter(|| {
+        let mut estimator = GHLLPlus::<_>::with_precision(prec, RandomState::new()).unwrap();
         for d in data {
             estimator.add(d);
         }
