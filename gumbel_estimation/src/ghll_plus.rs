@@ -95,20 +95,29 @@ impl<B: BuildHasher> GHLLPlus<B> {
         let no_free = self.free.count_ones();
 
         // apply low-range correction
-        if no_free != 0 && (no_free as f64) >= self.no_registers as f64 / E  {
+        if no_free as f64 >= self.no_registers as f64 / E  {
             // perform linear counting
             return self.no_registers as f64 * f64::ln(self.no_registers as f64 / no_free as f64);
         }
 
+        // count the number of occupied registers
+        let no_occupied = self.no_registers - no_free;
+
         // apply the second half of shift rounding
         // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
+            .zip(self.free.iter())
             .enumerate()
-            .map(|(i, val)| (val as i32 - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
+            .filter_map(|(i, (val, free))| if *free {
+                    None
+                } else {
+                    Some((val as i32 - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
+                }
+            )
             .sum::<f64>();
-        let registers_mean = registers_sum / self.no_registers as f64;
+        let registers_mean = registers_sum / no_occupied as f64;
         
-        self.no_registers as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean) - self.no_registers as f64 / 2.0 - 1.5
+        no_occupied as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean) - self.no_registers as f64 / 2.0 - 0.5
     }
     
     pub fn count_har(&self) -> f64 {
@@ -120,15 +129,24 @@ impl<B: BuildHasher> GHLLPlus<B> {
             // perform linear counting
             return self.no_registers as f64 * f64::ln(self.no_registers as f64 / no_free as f64);
         }
+        
+        // count the number of occupied registers
+        let no_occupied = self.no_registers - no_free;
 
         // apply the second half of shift rounding
         // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
+            .zip(self.free.iter())
             .enumerate()
-            .map(|(i, val)| f64::exp(-(val as i32 - gen_gumbel::BIAS) as f64 - 0.5 + gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64))
+            .filter_map(|(i, (val, free))| if *free {
+                    None
+                } else {
+                    Some(f64::exp(-(val as i32 - gen_gumbel::BIAS) as f64 - 0.5 + gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64))
+                }
+            )
             .sum::<f64>();
-        let registers_mean = registers_sum / self.no_registers as f64;
+        let registers_mean = registers_sum / no_occupied as f64;
     
-        (self.no_registers - 1) as f64 / registers_mean
+        (no_occupied - 1) as f64 / registers_mean
     }
 }
