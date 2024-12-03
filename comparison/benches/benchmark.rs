@@ -8,12 +8,16 @@ mod common;
 use crate::common::{bench_hll, bench_ghll, bench_ghllplus, load_data};
 
 fn benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Comparison");
     
     let data_sizes: Vec<_> = iproduct!(CARDINALITIES, DATA_SIZE_MULTIPLIES).filter(|(card, mult)| card * mult <= 1_000_000_000).collect();
 
     for prec in PRECISIONS { 
+        let mut group = c.benchmark_group("Cardinality Estimation");
+        group.sample_size(500);
+
         for (card, mult) in &data_sizes {
+
+            group.throughput(Throughput::Elements(*card as u64));
 
             // read data from file
 
@@ -32,6 +36,8 @@ fn benchmark(c: &mut Criterion) {
 
             bench_ghllplus(&mut group, prec, *card, &data);
         }
+
+        group.finish();
     }
 }
 
