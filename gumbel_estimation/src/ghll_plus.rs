@@ -64,6 +64,9 @@ impl<B: BuildHasher> GHLLPlus<B> {
         // hash the value and separate the hash into the index and the remainder
         let (index, hash) = hash_value(value, &self.builder, self.precision);
 
+        // mark the register as taken
+        self.free.set(index, false);
+
         // create a gumbel random variable
         let gumbel_value = gen_gumbel::from_bits_rounded(
             hash,
