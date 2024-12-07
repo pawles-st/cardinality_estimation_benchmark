@@ -2,7 +2,7 @@ use std::hash::{Hash, BuildHasher};
 use rand::{Rng, thread_rng};
 use rand::distributions::{Uniform};
 
-use crate::common::{NEG_GAMMA, GumbelError};
+use crate::common::*;
 use crate::gen_gumbel;
 use crate::registers::Registers;
 
@@ -15,13 +15,6 @@ pub struct GHLL<B: BuildHasher> {
 }
 
 impl<B: BuildHasher> GHLL<B> {
-
-    /// The minumal accepted precision
-    const MIN_PRECISION: u8 = 4;
-
-    /// The maximmal accepted precision
-    const MAX_PRECISION: u8 = 16;
-
     /// Creates a new `GumbelEstimator` object with a custom precision and hash builder
     ///
     /// # Arguments
@@ -31,7 +24,7 @@ impl<B: BuildHasher> GHLL<B> {
     /// - `builder` - this is a hash builder that will be used for hashing provided values
     pub fn with_precision(precision: u8, builder: B) -> Result<Self, GumbelError> {
         // check if the provided precision is within the bounds
-        if !(Self::MIN_PRECISION..=Self::MAX_PRECISION).contains(&precision) {
+        if !(MIN_PRECISION..=MAX_PRECISION).contains(&precision) {
             return Err(GumbelError::InvalidPrecision);
         }
 
@@ -61,15 +54,9 @@ impl<B: BuildHasher> GHLL<B> {
     }
 
     pub fn add<H: Hash + ?Sized>(&mut self, value: &H) {
-        // obtain the value's hash
-        let mut hash = self.builder.hash_one(value) as u32;
+        // hash the value and separate the hash into the index and the remainder
+        let (index, hash) = hash_value(value, &self.builder, self.precision);
         
-        // choose a register based on the first `precision` bits
-        let index: usize = (hash >> (32 - self.precision)) as usize;
-
-        // discard the above bits from the hash
-        hash <<= self.precision;
-
         // create a gumbel random variable
         let gumbel_value = gen_gumbel::from_bits_rounded(
             hash,

@@ -1,4 +1,4 @@
-use gumbel_estimation::{GHLL, GHLLPlus};
+use gumbel_estimation::{GHLL, GHLLPlus, GHLLReal};
 use std::collections::hash_map::RandomState;
 use std::error::Error;
 use std::fs::File;
@@ -18,7 +18,7 @@ pub fn load_data(card: usize, size: usize) -> Result<Vec<u64>, io::Error>
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    const NO_REGISTERS: u8 = 12;
+    const NO_REGISTERS: u8 = 8;
 
     let builder = RandomState::new();
     let data = load_data(100_000, 10_000_000)?;
@@ -31,14 +31,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("GHLL (geo): {}", ghll.count_geo());
         println!("GHLL (har): {}", ghll.count_har());
     }
+    
+    {
+        let mut ghllr = GHLLReal::<_>::with_precision(NO_REGISTERS, builder.clone()).unwrap();
+        for d in data.iter() {
+            ghllr.add(&d);
+        }
+        println!("GHLL Real (geo): {}", ghllr.count_geo());
+        println!("GHLL Real (har): {}", ghllr.count_har());
+    }
 
     {
         let mut ghllp = GHLLPlus::<_>::with_precision(NO_REGISTERS, builder.clone()).unwrap();
         for d in data.iter() {
             ghllp.add(&d);
         }
-        println!("GHLL Plus (geo): {}", ghllp.count_geo());
-        println!("GHLL Plus (har): {}", ghllp.count_har());
+        println!("GHLL Plus: {}", ghllp.count());
     }
 
     Ok(())

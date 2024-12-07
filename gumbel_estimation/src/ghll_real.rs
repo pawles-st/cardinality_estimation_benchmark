@@ -1,23 +1,19 @@
-use bitvec::prelude::*;
-use std::f64::consts::E;
 use std::hash::{Hash, BuildHasher};
 use rand::{Rng, thread_rng};
 use rand::distributions::{Uniform};
 
 use crate::common::*;
 use crate::gen_gumbel;
-use crate::registers::Registers;
 
 /// A cardinality estimator using the Gumbel distribution
-pub struct GHLLPlus<B: BuildHasher> {
+pub struct GHLLReal<B: BuildHasher> {
     builder: B,
     precision: u8,
     no_registers: usize,
-    registers: Registers,
-    free: BitVec,
+    registers: Vec<f32>,
 }
 
-impl<B: BuildHasher> GHLLPlus<B> {
+impl<B: BuildHasher> GHLLReal<B> {
     /// Creates a new `GumbelEstimator` object with a custom precision and hash builder
     ///
     /// # Arguments
@@ -39,16 +35,10 @@ impl<B: BuildHasher> GHLLPlus<B> {
         let unif = Uniform::new(0.0, 1.0);
 
         // initialise the registers to random gumbel values
-        let mut registers = Registers::new(no_registers);
-        for i in 0..no_registers {
+        let registers: Vec<_> = (0..no_registers).map(|_| {
             let q = rng.sample(unif);
-            let c = gen_gumbel::mantissa_to_float(builder.hash_one(i) as u32);
-            let gumbel_value = gen_gumbel::quantile_rounded(q, c);
-            registers.set(i, gumbel_value);
-        }
-
-        // mark all registers as free
-        let free = bitvec![1; no_registers];
+            gen_gumbel::quantile(q)
+        }).collect();
 
         // create the estimator object
         Ok(Self {
@@ -56,7 +46,6 @@ impl<B: BuildHasher> GHLLPlus<B> {
             precision,
             no_registers,
             registers,
-            free,
         })
     }
 
@@ -65,42 +54,31 @@ impl<B: BuildHasher> GHLLPlus<B> {
         let (index, hash) = hash_value(value, &self.builder, self.precision);
 
         // create a gumbel random variable
-        let gumbel_value = gen_gumbel::from_bits_rounded(
-            hash,
-            gen_gumbel::mantissa_to_float(self.builder.hash_one(index) as u32)
-        );
+        let gumbel_value = gen_gumbel::from_bits(hash);
 
         // update the register to the max of the gumbel random variables
-        self.registers.set_greater(index, gumbel_value);
+        self.registers[index] = f32::max(self.registers[index], gumbel_value);
     }
 
-    pub fn count(&self) -> f64 {
-        // compute the numbers of free registers
-        let no_free = self.free.count_ones();
-
-        // apply low-range correction
-        if no_free as f64 >= self.no_registers as f64 / E  {
-            // perform linear counting
-            return self.no_registers as f64 * f64::ln(self.no_registers as f64 / no_free as f64);
-        }
-
-        // count the number of occupied registers
-        let no_occupied = self.no_registers - no_free;
-
+    pub fn count_geo(&self) -> f64 {
         // apply the second half of shift rounding
         // and calculate the geometric mean of the `exp(register)` terms
         let registers_sum = self.registers.iter()
-            .zip(self.free.iter())
-            .enumerate()
-            .filter_map(|(i, (val, free))| if *free {
-                    None
-                } else {
-                    Some((val as i32 - gen_gumbel::BIAS) as f64 - gen_gumbel::mantissa_to_float(self.builder.hash_one(i) as u32) as f64)
-                }
-            )
+            .map(|&val| val as f64)
             .sum::<f64>();
-        let registers_mean = registers_sum / no_occupied as f64;
+        let registers_mean = registers_sum / self.no_registers as f64;
         
-        no_occupied as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean) - no_occupied as f64 / 2.0 - 0.5
+        self.no_registers as f64 * f64::exp(NEG_GAMMA + registers_mean)
+    }
+    
+    pub fn count_har(&self) -> f64 {
+        // apply the second half of shift rounding
+        // and calculate the harmonic mean of the `exp(register)` terms
+        let registers_sum = self.registers.iter()
+            .map(|&val| f64::exp(-val as f64))
+            .sum::<f64>();
+        let registers_mean = registers_sum / self.no_registers as f64;
+        
+        self.no_registers as f64 / registers_mean - 1.0
     }
 }
