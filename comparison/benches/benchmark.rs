@@ -13,7 +13,6 @@ fn benchmark(c: &mut Criterion) {
 
     for prec in PRECISIONS { 
         let mut group = c.benchmark_group("Cardinality Estimation");
-        group.sample_size(500);
 
         for (card, mult) in &data_sizes {
 
