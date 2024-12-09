@@ -1,3 +1,8 @@
+[package]
+name = "Streaming_algorithms_comparison"
+version = "1.0.0"
+default-run = "comparison"
+
 [workspace]
 members = [
 	"gumbel_estimation",
@@ -5,3 +10,7 @@ members = [
 	"gen_data",
 ]
 resolver = "2"
+
+[profile.release]
+debug = true
+strip = false

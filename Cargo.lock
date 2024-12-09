@@ -3,6 +3,10 @@
 version = 3
 
 [[package]]
+name = "Streaming_algorithms_comparison"
+version = "1.0.0"
+
+[[package]]
 name = "ahash"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -2,15 +2,21 @@
 
 cardinalities=()
 
+# large datasets
+
 size_multiplies=(100)
 for i in {1..80}; do
 	cardinalities+=($((i * 10000)))
 done
 
+# small datasets
+
 #size_multiplies=(10)
 #for i in {1..2000}; do
 	#cardinalities+=($((i)))
 #done
+
+# generate the datasets
 
 for card in "${cardinalities[@]}"; do
 	for mult in "${size_multiplies[@]}"; do

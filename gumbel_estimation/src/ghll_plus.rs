@@ -104,6 +104,6 @@ impl<B: BuildHasher> GHLLPlus<B> {
             .sum::<f64>();
         let registers_mean = registers_sum / no_occupied as f64;
         
-        no_occupied as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean) - no_occupied as f64 / 2.0 - 0.5
+        no_occupied as f64 * f64::exp(NEG_GAMMA + 0.5 + registers_mean) - self.no_registers as f64 / 2.0 - 0.5
     }
 }

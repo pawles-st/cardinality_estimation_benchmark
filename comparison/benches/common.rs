@@ -58,6 +58,6 @@ where
         for d in data {
             estimator.add(d);
         }
-        let _estimate = estimator.count_geo();
+        let _estimate = estimator.count();
     }));
 }

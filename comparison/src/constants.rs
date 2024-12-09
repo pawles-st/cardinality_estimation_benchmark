@@ -1,3 +1,5 @@
+// this file can be edited to change the dataset sizes used for benchmarks and comparisons
+
 // create a const array from a start value and step
 const fn array_from_range<const K: usize>(begin: usize, step: usize) -> [usize; K] {
     // create the array
@@ -16,13 +18,13 @@ const fn array_from_range<const K: usize>(begin: usize, step: usize) -> [usize; 
 }
 
 // cardinalities of the underlying multisets
-pub const CARDINALITIES: [usize; 80] = array_from_range(10_000, 10_000);
-//pub const CARDINALITIES: [usize; 2000] = array_from_range(1, 1);
+pub const CARDINALITIES: [usize; 80] = array_from_range(10_000, 10_000); // large datasets
+//pub const CARDINALITIES: [usize; 2000] = array_from_range(1, 1); // small datasets
 
 // dataset size multiplies; the size of the dataset
 // is calculated as `cardinality * data_size_multiply`
-pub const DATA_SIZE_MULTIPLIES: [usize; 1] = [100];
-//pub const DATA_SIZE_MULTIPLIES: [usize; 1] = [10];
+pub const DATA_SIZE_MULTIPLIES: [usize; 1] = [100]; // large datasets
+//pub const DATA_SIZE_MULTIPLIES: [usize; 1] = [10]; // small datasets
 
 // precisions to use for the HyperLogLog and Gumbel estimators;
 // the number of registers used is equal to `2^precision`

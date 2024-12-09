@@ -16,7 +16,7 @@ fn benchmark(c: &mut Criterion) {
 
         for (card, mult) in &data_sizes {
 
-            group.throughput(Throughput::Elements(*card as u64));
+            group.throughput(Throughput::Elements((*card) as u64 * (*mult) as u64));
 
             // read data from file
 
