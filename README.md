@@ -71,8 +71,3 @@ Rscript [filename]
 ```
 
 Make sure to run the command from the `/visualisation` directory. The resulting plot will be saved in the same folder.
-
-## References
-
-[^1]: Flajolet, Philippe et al. “HyperLogLog: the analysis of a near-optimal cardinality estimation algorithm.” Discrete Mathematics & Theoretical Computer Science (2007): 137-156.
-[^2]: Lukasiewicz, Aleksander and Przemyslaw Uzna'nski. “Cardinality estimation using Gumbel distribution.” Embedded Systems and Applications (2020).
